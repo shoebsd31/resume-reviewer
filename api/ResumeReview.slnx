@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="ResumeReview.Api/ResumeReview.Api.csproj" />
+  <Project Path="ResumeReview.Domain/ResumeReview.Domain.csproj" />
+  <Project Path="ResumeReview.Infrastructure/ResumeReview.Infrastructure.csproj" />
+  <Project Path="ResumeReview.Tests/ResumeReview.Tests.csproj" />
+  <Project Path="ResumeReview.Worker/ResumeReview.Worker.csproj" />
+</Solution>

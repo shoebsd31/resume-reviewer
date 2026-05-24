@@ -1,0 +1,158 @@
+<div class="space-y-6">
+  <div class="flex items-center gap-3">
+    <a mat-button routerLink="/candidates"><mat-icon>arrow_back</mat-icon>Back</a>
+    <h1 class="text-2xl font-semibold">Reviewed-candidates report</h1>
+    <span class="text-sm text-slate-500" data-testid="report-count">{{ candidates().length }} reviewed</span>
+  </div>
+
+  @if (loading()) {
+    <p class="text-slate-500">Loading report…</p>
+  } @else if (candidates().length === 0) {
+    <p class="text-slate-500" data-testid="empty-report">Mark candidates as <strong>Reviewed</strong> on their detail page to include them here.</p>
+  } @else {
+    <nav class="flex gap-2 flex-wrap text-sm" aria-label="Report navigation">
+      <a href="#heatmap" class="text-ai-700 underline">Skills heatmap</a>
+      <a href="#timeline" class="text-ai-700 underline">Experience timeline</a>
+      <a href="#seniority" class="text-ai-700 underline">Seniority</a>
+      <a href="#tech" class="text-ai-700 underline">Tech-stack cloud</a>
+      <a href="#compare" class="text-ai-700 underline">Side-by-side</a>
+      <a href="#education" class="text-ai-700 underline">Education</a>
+      <a href="#leaderboard" class="text-ai-700 underline">Top-N leaderboard</a>
+    </nav>
+
+    <section id="heatmap" class="bg-white rounded-md p-4 shadow-sm" data-viz="skills-heatmap">
+      <h2 class="font-semibold mb-2">1. Skills heatmap</h2>
+      <ngx-charts-heat-map
+        [results]="data().skillsHeatmap"
+        [scheme]="scheme"
+        xAxisLabel="Skill"
+        yAxisLabel="Candidate"
+        [view]="[900, 360]"
+        [xAxis]="true" [yAxis]="true" />
+    </section>
+
+    <section id="timeline" class="bg-white rounded-md p-4 shadow-sm" data-viz="experience-timeline">
+      <h2 class="font-semibold mb-2">2. Experience timeline</h2>
+      @for (row of data().experienceTimeline; track row.name) {
+        <div class="text-sm mb-1">
+          <span class="font-medium">{{ row.name }}</span>
+          <div class="flex flex-wrap gap-1 mt-1">
+            @for (e of row.series; track e.name) {
+              <span class="text-xs px-2 py-0.5 rounded bg-ai-100 text-ai-700">{{ e.name }}</span>
+            }
+          </div>
+        </div>
+      }
+    </section>
+
+    <section id="seniority" class="bg-white rounded-md p-4 shadow-sm" data-viz="seniority-distribution">
+      <h2 class="font-semibold mb-2">3. Seniority distribution</h2>
+      <ngx-charts-pie-chart [results]="data().seniorityDistribution" [scheme]="scheme"
+                            [view]="[600, 300]" [labels]="true" />
+    </section>
+
+    <section id="tech" class="bg-white rounded-md p-4 shadow-sm" data-viz="tech-stack">
+      <h2 class="font-semibold mb-2">4. Tech-stack frequency</h2>
+      <div class="flex flex-wrap gap-2 items-baseline">
+        @for (t of data().techCloud; track t.name) {
+          <span class="inline-block px-2 py-0.5 rounded-full bg-ai-100 text-ai-700"
+                [style.fontSize.rem]="0.7 + (t.value / 5)">{{ t.name }} ({{ t.value }})</span>
+        }
+      </div>
+    </section>
+
+    <section id="compare" class="bg-white rounded-md p-4 shadow-sm" data-viz="side-by-side">
+      <h2 class="font-semibold mb-2">5. Side-by-side comparison</h2>
+      <mat-form-field appearance="outline" class="w-full max-w-md">
+        <mat-label>Compare candidates</mat-label>
+        <mat-select multiple [ngModel]="compareIds()" (ngModelChange)="compareIds.set($event)" data-testid="compare-select">
+          @for (c of candidates(); track c.id) {
+            <mat-option [value]="c.id">{{ c.fullName }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-3">
+        @for (c of comparison(); track c.id) {
+          <mat-card>
+            <mat-card-header>
+              <mat-card-title>{{ c.fullName }}</mat-card-title>
+              <mat-card-subtitle>{{ c.aiFields?.aiSeniorityLevel }} · {{ c.aiFields?.aiYearsExperienceEstimate }}y</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <p class="text-xs text-slate-700 line-clamp-4">{{ c.aiFields?.aiSummary || c.summary }}</p>
+              <div class="text-xs mt-2 flex flex-wrap gap-1">
+                @for (s of c.skills.slice(0,5); track s.id) {
+                  <span class="bg-slate-100 px-1.5 py-0.5 rounded">{{ s.name }}</span>
+                }
+              </div>
+            </mat-card-content>
+          </mat-card>
+        }
+      </div>
+    </section>
+
+    <section id="education" class="bg-white rounded-md p-4 shadow-sm" data-viz="education-breakdown">
+      <h2 class="font-semibold mb-2">6. Education / certification breakdown</h2>
+      <ngx-charts-bar-vertical-stacked
+        [results]="data().educationBreakdown"
+        [scheme]="scheme"
+        [view]="[900, 320]"
+        xAxisLabel="Institution"
+        yAxisLabel="Count"
+        [xAxis]="true" [yAxis]="true" />
+    </section>
+
+    <section id="leaderboard" class="bg-white rounded-md p-4 shadow-sm" data-viz="leaderboard">
+      <h2 class="font-semibold mb-2">7. Top-N leaderboard</h2>
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-left text-xs text-slate-500">
+            <th class="py-2">#</th>
+            <th>Name</th>
+            <th>Seniority</th>
+            <th>Years</th>
+            <th class="text-right">Score</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of data().leaderboard; track row.id; let i = $index) {
+            <tr class="border-t hover:bg-ai-50/30 cursor-pointer" (click)="toggleExpanded(row.id)" [attr.data-testid]="'leaderboard-row-' + i">
+              <td class="py-2 font-medium">{{ i + 1 }}</td>
+              <td>{{ row.name }}</td>
+              <td>{{ row.seniority }}</td>
+              <td>{{ row.yearsExperience }}</td>
+              <td class="text-right font-semibold">{{ row.score }}</td>
+              <td><mat-icon class="text-slate-400">{{ expandedLeaderboardId() === row.id ? 'expand_less' : 'expand_more' }}</mat-icon></td>
+            </tr>
+            @if (expandedLeaderboardId() === row.id) {
+              <tr><td colspan="6" class="bg-ai-50/50 px-3 py-2 text-xs">
+                <div class="font-semibold mb-1">Score components</div>
+                <table class="w-full">
+                  <thead>
+                    <tr class="text-slate-500">
+                      <th class="text-left">Component</th>
+                      <th class="text-right">Weight</th>
+                      <th class="text-right">Value</th>
+                      <th class="text-right">Weighted</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (comp of row.components; track comp.label) {
+                      <tr>
+                        <td>{{ comp.label }}</td>
+                        <td class="text-right">{{ comp.weight }}</td>
+                        <td class="text-right">{{ comp.value | number:'1.0-1' }}</td>
+                        <td class="text-right">{{ comp.weighted | number:'1.0-1' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </td></tr>
+            }
+          }
+        </tbody>
+      </table>
+    </section>
+  }
+</div>

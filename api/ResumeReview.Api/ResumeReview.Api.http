@@ -1,0 +1,6 @@
+@ResumeReview.Api_HostAddress = http://localhost:5201
+
+GET {{ResumeReview.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

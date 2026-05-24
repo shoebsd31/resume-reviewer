@@ -1,0 +1,151 @@
+@if (svc.current(); as c) {
+  <div class="grid grid-cols-12 gap-6">
+    <div class="col-span-12 lg:col-span-9 space-y-4">
+      <div class="flex items-center gap-3">
+        <a mat-button routerLink="/candidates"><mat-icon>arrow_back</mat-icon>Back</a>
+        <h1 class="text-2xl font-semibold" data-testid="candidate-name">{{ c.fullName }}</h1>
+      </div>
+
+      <mat-expansion-panel expanded>
+        <mat-expansion-panel-header>
+          <mat-panel-title>Identity & contact</mat-panel-title>
+        </mat-expansion-panel-header>
+        <dl class="grid grid-cols-2 gap-2 text-sm">
+          <dt class="text-slate-500">Email</dt>           <dd>{{ c.email }}</dd>
+          <dt class="text-slate-500">Phone</dt>           <dd>{{ c.phone || '—' }}</dd>
+          <dt class="text-slate-500">Location</dt>        <dd>{{ c.location || '—' }}</dd>
+          <dt class="text-slate-500">LinkedIn</dt>        <dd><a class="text-ai-700 underline" target="_blank" [href]="c.linkedInUrl">{{ c.linkedInUrl || '—' }}</a></dd>
+          <dt class="text-slate-500">GitHub</dt>          <dd><a class="text-ai-700 underline" target="_blank" [href]="c.gitHubUrl">{{ c.gitHubUrl || '—' }}</a></dd>
+          <dt class="text-slate-500">Source file</dt>     <dd>{{ c.sourceFileName }}</dd>
+          <dt class="text-slate-500">Last edited by</dt>  <dd>{{ c.lastEditedBy }}</dd>
+        </dl>
+      </mat-expansion-panel>
+
+      <mat-expansion-panel expanded>
+        <mat-expansion-panel-header><mat-panel-title>Summary</mat-panel-title></mat-expansion-panel-header>
+        <p class="whitespace-pre-wrap text-sm">{{ c.summary }}</p>
+      </mat-expansion-panel>
+
+      <mat-expansion-panel>
+        <mat-expansion-panel-header><mat-panel-title>Skills ({{ c.skills.length }})</mat-panel-title></mat-expansion-panel-header>
+        <mat-chip-set>
+          @for (s of c.skills; track s.id) {
+            <mat-chip>{{ s.name }}</mat-chip>
+          }
+        </mat-chip-set>
+      </mat-expansion-panel>
+
+      <mat-expansion-panel>
+        <mat-expansion-panel-header><mat-panel-title>Work experience ({{ c.workExperiences.length }})</mat-panel-title></mat-expansion-panel-header>
+        <ol class="relative border-l-2 border-slate-200 pl-4 space-y-4">
+          @for (e of c.workExperiences; track e.id) {
+            <li>
+              <div class="font-semibold">{{ e.title }} <span class="text-slate-500 font-normal">@ {{ e.company }}</span></div>
+              <div class="text-xs text-slate-500">{{ e.startDate }} → {{ e.endDate || 'Present' }}</div>
+              <p class="text-sm mt-1">{{ e.description }}</p>
+            </li>
+          }
+        </ol>
+      </mat-expansion-panel>
+
+      <mat-expansion-panel>
+        <mat-expansion-panel-header><mat-panel-title>Education</mat-panel-title></mat-expansion-panel-header>
+        @for (e of c.education; track e.id) {
+          <div class="text-sm">
+            <strong>{{ e.institution }}</strong> — {{ e.degree }} in {{ e.field }} ({{ e.graduationYear || '—' }})
+          </div>
+        }
+      </mat-expansion-panel>
+
+      <mat-expansion-panel>
+        <mat-expansion-panel-header><mat-panel-title>Certifications</mat-panel-title></mat-expansion-panel-header>
+        @for (x of c.certifications; track x.id) {
+          <div class="text-sm">{{ x.name }} <span class="text-slate-500">— {{ x.issuer }} ({{ x.year || '—' }})</span></div>
+        }
+      </mat-expansion-panel>
+
+      <mat-expansion-panel>
+        <mat-expansion-panel-header><mat-panel-title>Projects</mat-panel-title></mat-expansion-panel-header>
+        @for (p of c.projects; track p.id) {
+          <div class="text-sm mb-2">
+            <strong>{{ p.name }}</strong>
+            <p>{{ p.description }}</p>
+            <div class="text-xs text-slate-500">{{ p.techStack }}</div>
+          </div>
+        }
+      </mat-expansion-panel>
+
+      <h2 class="text-lg font-semibold mt-6 mb-2 flex items-center gap-2 text-ai-700">
+        <mat-icon class="!text-ai-600">auto_awesome</mat-icon>
+        AI insights
+      </h2>
+      <div class="space-y-3" data-testid="ai-fields">
+        @for (f of aiFields(); track f.name) {
+          <app-ai-field
+            [fieldName]="f.name"
+            [label]="label(f.name)"
+            [value]="f.value"
+            [isUserEdited]="isUserEdited(f.name)"
+            [wasRegenerated]="wasRegenerated(f.name)"
+            [canRevert]="canRevert(f.name)"
+            [busy]="busy()"
+            (onRegenerate)="openRegenerate($event)"
+            (onEdit)="editField($event)"
+            (onRevert)="revertField($event)"
+            (onShowHistory)="showHistory($event)"
+          ></app-ai-field>
+        }
+      </div>
+    </div>
+
+    <aside class="col-span-12 lg:col-span-3">
+      <div class="sticky top-20 bg-white p-4 rounded-md shadow-sm space-y-3">
+        <div>
+          <div class="text-xs text-slate-500">Review status</div>
+          <div class="text-lg font-medium" data-testid="review-status">{{ c.reviewStatus }}</div>
+        </div>
+        <button mat-raised-button color="primary" class="!w-full"
+                (click)="markReviewed()"
+                [disabled]="busy() || c.reviewStatus === 'Reviewed'"
+                data-testid="mark-reviewed">
+          <mat-icon>check</mat-icon>
+          Mark as reviewed
+        </button>
+        <button mat-stroked-button class="!w-full" (click)="reject()" [disabled]="busy()">
+          <mat-icon>close</mat-icon>
+          Reject
+        </button>
+        <button mat-stroked-button class="!w-full" (click)="regenerateAll()" [disabled]="busy()" data-testid="regen-all">
+          <mat-icon>refresh</mat-icon>
+          Regenerate all AI fields
+        </button>
+        <div class="text-xs text-slate-500 pt-2 border-t">
+          Source: <span class="font-mono">{{ c.sourceFileName }}</span>
+        </div>
+      </div>
+    </aside>
+  </div>
+} @else {
+  <p class="text-slate-500">Loading candidate…</p>
+}
+
+@if (history(); as rows) {
+  <div class="fixed inset-y-0 right-0 w-[420px] bg-white shadow-xl border-l z-20 p-4 overflow-y-auto" data-testid="history-drawer">
+    <div class="flex justify-between items-center mb-3">
+      <h3 class="font-semibold">History — {{ historyField() }}</h3>
+      <button mat-icon-button (click)="closeHistory()"><mat-icon>close</mat-icon></button>
+    </div>
+    <div class="space-y-3">
+      @for (r of rows; track r.id) {
+        <div class="border rounded p-2 text-xs">
+          <div class="font-semibold">{{ r.requestedAt | date: 'short' }} <span class="text-slate-500">— {{ r.modelName }}</span></div>
+          <div class="text-slate-500">Requested by {{ r.requestedBy }} ({{ r.status }})</div>
+          @if (r.extraInstructions) {
+            <div class="italic mt-1">“{{ r.extraInstructions }}”</div>
+          }
+          <pre class="whitespace-pre-wrap bg-slate-50 p-1 mt-1 rounded">{{ r.responseText }}</pre>
+        </div>
+      }
+    </div>
+  </div>
+}

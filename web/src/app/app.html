@@ -1,0 +1,17 @@
+<mat-toolbar color="primary" class="!sticky top-0 z-10 shadow-md">
+  <div class="flex items-center gap-6 w-full max-w-7xl mx-auto px-4">
+    <span class="text-lg font-semibold">Resume Review</span>
+    <nav class="flex gap-2 ml-4">
+      <a mat-button routerLink="/candidates" routerLinkActive="!bg-white/20">Candidates</a>
+      <a mat-button routerLink="/report" routerLinkActive="!bg-white/20" data-testid="nav-report">
+        Report
+        <span class="ml-2 text-xs px-2 py-0.5 rounded-full bg-white/20"
+              data-testid="reviewed-count">{{ svc.reviewedCount() }}</span>
+      </a>
+    </nav>
+  </div>
+</mat-toolbar>
+
+<main class="max-w-7xl mx-auto px-4 py-6">
+  <router-outlet />
+</main>

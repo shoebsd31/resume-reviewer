@@ -1,0 +1,35 @@
+## .NET
+**/bin/
+**/obj/
+*.user
+*.suo
+.vs/
+
+## Node
+**/node_modules/
+**/dist/
+**/.angular/
+**/coverage/
+**/playwright-report/
+**/test-results/
+
+## Claude Code (per-developer)
+.claude/settings.local.json
+
+## Env / secrets
+# Block .env at any depth (sample.env stays committable — it isn't named ".env")
+**/.env
+**/.env.*
+# Common credential / cert files
+**/*.pem
+**/*.pfx
+**/*.p12
+**/*.key
+**/secrets.json
+# .NET user-secret overrides
+**/appsettings.*.local.json
+**/appsettings.Local.json
+
+## Generated artefacts
+samples-resumes/output/
+*.log
