@@ -2,7 +2,7 @@
 
 End-to-end local platform that ingests Word `.docx` resumes, enriches them with AI insights via Azure AI Foundry (with a deterministic local stub for offline dev), surfaces them in an Angular 20 review UI, and produces a one-click HTML report with 7 visualizations.
 
-Implementation of [`requirements.md`](./requirements.md).
+Implementation of [`requirements.md`](./requirements.md). Design choices are recorded in [`architecture-decision-records.md`](./architecture-decision-records.md).
 
 ## Stack
 
@@ -42,7 +42,9 @@ copy sample.env .env
 dotnet build ResumeReview.slnx
 
 # 4. Seed the database with all sample resumes
-dotnet run --project ResumeReview.Api -- seed --path ../samples-resumes/output
+#    Note: `dotnet run --project` sets the process CWD to the project directory,
+#    so the --path must be relative to ResumeReview.Api/ (or use an absolute path).
+dotnet run --project ResumeReview.Api -- seed --path ../../samples-resumes/output
 
 # 5. Run the API (Swagger/OpenAPI spec at /openapi/v1.json in dev)
 dotnet run --project ResumeReview.Api
@@ -53,7 +55,24 @@ npm install --legacy-peer-deps
 npm start          # serves on http://localhost:4200
 ```
 
-The Angular app calls the API at `http://localhost:5181` (override in `web/src/environments/environment.ts`).
+The Angular app calls the API at `http://localhost:5201` (override in `web/src/environments/environment.ts`). The API port is set by `api/ResumeReview.Api/Properties/launchSettings.json` — keep the two in sync if you change it.
+
+## Reset
+
+`reset.ps1` (repo root) drops `ResumeReviewDb`, wipes generated resumes, regenerates the cohort against the template, and re-seeds. Stop the API first so it releases its DB connections.
+
+```pwsh
+pwsh ./reset.ps1                                       # defaults: count=18, seed=42
+pwsh ./reset.ps1 -SqlInstance "localhost\SQLEXPRESS" -Count 25 -Seed 7
+```
+
+## AI provider
+
+`api/.env` controls whether enrichment hits real Azure AI Foundry or the local deterministic stub:
+- `AzureAi__UseStub=true` (or missing endpoint/key) → `StubAiProvider`. Offline, fast, byte-deterministic — so regenerating a field returns the same text it had before.
+- `AzureAi__UseStub=false` with real `Endpoint` + `ApiKey` + `DeploymentName` → `AzureFoundryAiProvider`.
+
+Provider selection happens once at startup in DI ([`Infrastructure/DependencyInjection.cs`](api/ResumeReview.Infrastructure/DependencyInjection.cs)), so restart the API after toggling `UseStub`. The model name recorded in `AiGenerationHistory` is the easy way to confirm which provider serviced a regeneration.
 
 ## Tests
 
@@ -76,7 +95,7 @@ npm run e2e
 |---|---|---|
 | 1 | Sample generator produces ≥ 15 diverse `.docx` resumes | ✅ 18 by default (`--count` is configurable) |
 | 2 | EF Core code-first schema with all entities in §4.3 | ✅ See [`api/ResumeReview.Domain/Entities.cs`](api/ResumeReview.Domain/Entities.cs) |
-| 3 | Seed command ingests every sample resume | ✅ `dotnet run --project ResumeReview.Api -- seed --path ./samples-resumes/output` |
+| 3 | Seed command ingests every sample resume | ✅ `dotnet run --project ResumeReview.Api -- seed --path ../../samples-resumes/output` |
 | 4 | AI enrichment populates 7 fields, with history + override snapshot | ✅ `EnrichmentService` + `StubAiProvider` (or Azure Foundry when configured) |
 | 5 | Angular list view, table + card toggle, filters | ✅ Persisted in `localStorage` |
 | 6 | Detail view shows every DB field with AI fields visually distinct | ✅ Purple border, sparkle icon, badge per state |
